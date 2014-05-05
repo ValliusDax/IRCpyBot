@@ -11,7 +11,7 @@ class BotUI(object):
 
     loadDateTime = datetime.datetime.now()
 
-    def main(self,screen, irc_print_queue, irc_flood_timeout_queue, ui_print_queue, ui_status_queue):
+    def main(self, screen, irc_print_queue, irc_flood_timeout_queue, ui_print_queue, ui_status_queue):
         try:
             curses.start_color()
             curses.init_pair(1, curses.COLOR_GREEN, curses.COLOR_BLUE)
@@ -110,6 +110,8 @@ class BotUI(object):
                         PING_TIME=status[1]
                     elif status[0] == STAT['irc_messages']:
                         IRC_MESSAGES=status[1]
+                else:                  
+                    time.sleep(0.004)
                     
                     
                 uptime = (datetime.datetime.now() - self.loadDateTime)

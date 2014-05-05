@@ -25,6 +25,7 @@ class BotClass(object):
     irc_notice_queue = Queue.Queue(0)
     irc_raw_queue = Queue.Queue(0)
     irc_flood_timeout_queue = Queue.Queue(0)
+    irc_raw_received_queue = Queue.Queue(0)
     ui_console_queue = Queue.Queue(0)
     ui_status_queue = Queue.Queue(0)
     warned_users = []
@@ -173,6 +174,12 @@ class BotClass(object):
           if self.irc_raw_queue.empty() == False:
             line = self.irc_raw_queue.get()
             self.sock.send(line + '\n')
+            
+          if (self.irc_flood_timeout_queue.empty() != False) and \
+             (self.irc_notice_queue.empty()        != False) and \
+             (self.irc_print_queue.empty()         != False) and \
+             (self.irc_raw_queue.empty()           != False):
+                time.sleep(1)
 
       except KeyboardInterrupt:
         exit()
@@ -189,13 +196,15 @@ class BotClass(object):
       self.ui_console_queue.put("Connecting to " + str(self.conn))
       self.sock.connect(self.conn) #connects to the server
       PINGS=0
-      ME=USER['nick']+'!'
 
       ListenThread = threading.Thread(target=self.listen)
       ListenThread.daemon = True
       ListenThread.start()
 
       while 1:
+        if self.irc_messages.empty() == True:
+          time.sleep(0.5)
+          continue
         msg = self.irc_messages.get() # recieves server messages
         msg=msg.split('\n')
         for line in msg:
@@ -282,265 +291,7 @@ class BotClass(object):
 
 
             elif line.find('PRIVMSG') != -1: #channel joined now parse messages
-              self.parsemsg(line)
-              rline=line.rstrip() #removes trailing 'rn'
-              dline=rline.split(':')
-              dline=''.join(dline[2:])
-              sline=rline.split()
-              pline=' '.join(sline[3:])
-              pline=pline[1:]
-              bline=sline[0][:].split("!")
-              user=bline[0][1:]
-              command=sline[3][1:]
-              if any(user == s for s in self.ignore):
-                self.ui_console_queue.put("I am ignoring " + user)
-                continue
-              if (line.lower().find(USER['nick'].lower()) != -1) and (line.lower().find('bot') != -1):
-                self.irc_print('No! I\'m a ballerina')
-              if len(sline) >= 4:
-                arguments=sline[4:]
-              if command == ME != -1:
-                self.ui_console_queue.put("Got Command: " + pline + " from " + user)
-                if any(user == s for s in self.masters):
-
-                  numargs=len(arguments)
-                  if numargs == 0:
-                    self.irc_print('Yeeees, ' + user + '?')
-                  elif (arguments[0] == 'add' != -1) and (numargs > 1):
-                    if (arguments[1] == 'master' != -1) and (numargs > 2):
-                      self.masters.append(arguments[2])
-                      masters_db=open('masters','w')
-                      pickle.dump(self.masters, masters_db)
-                      masters_db.close()
-                      self.irc_print(arguments[2] + " is now one of my masters")
-                    if (arguments[1] == 'insult' != -1) and (numargs > 2):
-                      self.insults.append(' '.join(arguments[2:]))
-                      insults_db=open('insults','w')
-                      pickle.dump(self.insults, insults_db)
-                      insults_db.close()
-                      self.confirm()
-                    if (arguments[1] == 'ignore' != -1) and (numargs > 2):
-                      if (arguments[2] != USER['owner']  != -1):
-                        self.ignore.append(arguments[2])
-                        ignore_db=open('ignore','w')
-                        pickle.dump(self.ignore, ignore_db)
-                        ignore_db.close()
-                        self.confirm()
-
-                  elif (arguments[0] == 'list' != -1) and (numargs > 1):
-                    if (arguments[1] == 'masters' != -1) and (numargs > 1):
-                      for i , val in enumerate(self.masters):
-                        self.irc_notice(user + ' ' + self.masters[i])
-                    if (arguments[1] == 'insults' != -1) and (numargs > 1):
-                      for i , val in enumerate(self.insults):
-                        self.irc_notice(user + ' ' + self.insults[i])
-                    if (arguments[1] == 'ignore' != -1) and (numargs > 1):
-                      for i , val in enumerate(self.ignore):
-                        self.irc_notice(user + ' ' + self.ignore[i])
-
-                  elif (arguments[0] == 'forget' != -1) and (numargs > 1):
-                    if (arguments[1] == 'master' != -1) and (numargs > 1):
-                      if (arguments[2] != USER['owner']  != -1):
-                        if arguments[2] in self.masters:
-                          self.masters.remove(arguments[2])
-                          masters_db=open('masters','w')
-                          pickle.dump(self.masters, masters_db)
-                          masters_db.close()
-                          self.irc_print(arguments[2] + " is no longer one of my masters")
-                    if (arguments[1] == 'insult' != -1) and (numargs > 1):
-                      if arguments[2:] in self.insults:
-                        self.insults.remove(arguments[2:])
-                        insults_db=open('insults','w')
-                        pickle.dump(self.insults, insults_db)
-                        insults_db.close()
-                        self.irc_print(arguments[2:] + " forgotten")
-                    if (arguments[1] == 'ignore' != -1) and (numargs > 1):
-                      if arguments[2] in self.ignore:
-                        self.ignore.remove(arguments[2])
-                        ignore_db=open('ignore','w')
-                        pickle.dump(self.ignore, ignore_db)
-                        ignore_db.close()
-                        self.irc_print(arguments[2] + " I'm listening")
-
-                  elif (arguments[0] == 'insult' != -1) and (numargs > 1):
-                    if (arguments[1] != USER['owner'] != -1) and (numargs > 1):
-                      self.irc_print(arguments[1] + " " + choice(self.insults))
-
-                  elif (arguments[0] == 'attack' != -1) and (numargs > 1):
-                    if (arguments[1] != USER['owner'] != -1) and \
-                       (arguments[1] != USER['nick']  != -1) and \
-                       (numargs > 1) and not self.nice:
-                          self.irc_raw_queue.put('KICK %s %s dances on your grave\n' % (CONN['channel'],arguments[1]))
-
-                  elif (arguments[0] == 'tldr' != -1) and (numargs > 1):
-                    if (arguments[1] == 'set' != -1) and (numargs > 2):
-                      if (arguments[2] == 'status' != -1) and (numargs > 3):
-                        self.site['status'] = ' '.join(arguments[3:])
-                      elif (arguments[2] == 'eta' != -1) and (numargs > 3):
-                        self.site['eta'] = ' '.join(arguments[3:])
-                      elif (arguments[2] == 'reason' != -1) and (numargs > 3):
-                        self.site['reason'] = ' '.join(arguments[3:])
-                      status_db=open('status','w')
-                      pickle.dump(self.site, status_db)
-                      status_db.close()
-
-                  elif (arguments[0] == 'goto' != -1) and (numargs > 1):
-                    self.irc_print('bye bye')
-                    old_chan = CONN['channel']
-                    CONN['channel']=arguments[1]
-                    self.irc_raw_queue.put('PART ' + old_chan + '\n')
-
-                  elif (arguments[0] == 'dance!' != -1):
-                    if (user == USER['owner']  != -1):
-                      if not self.waiting_for_response:
-                        self.display_result = False
-                        self.random_kick = True
-                        self.waiting_for_response = True
-                        self.sock.send('NAMES ' + CONN['channel'] + '\n') #Joins default channel
-                    else:
-                      self.irc_print('Fuck off ' + user +'!')
-
-                  elif (arguments[0] == 'mood?' != -1):
-                    if self.nice:
-                      self.irc_notice(user + ' I\'m being nice.')
-                    elif self.annoying:
-                      self.irc_notice(user + ' I\'m being annoying.')
-                    elif self.nasty:
-                      self.irc_notice(user + ' I\'m being nasty.')
-                    elif self.vindictive:
-                      self.irc_notice(user + ' I\'m being vindictive.')
-                    else:
-                      self.irc_notice(user + ' I\'m being random (aka, mood not known).')
-
-                  elif (arguments[0] == 'shutup!' != -1):
-                    self.silent = True
-
-                  elif (arguments[0] == 'sing!' != -1):
-                    self.silent = False
-
-                  elif (arguments[0] == 'nice!' != -1):
-                    self.nice       = True
-                    self.annoying   = False
-                    self.nasty      = False
-                    self.vindictive = False
-
-
-                  elif (arguments[0] == 'annoying!' != -1):
-                    self.nice       = False
-                    self.annoying   = True
-                    self.nasty      = False
-                    self.vindictive = False
-
-
-                  elif (arguments[0] == 'nasty!' != -1):
-                    self.nice       = False
-                    self.annoying   = False
-                    self.nasty      = True
-                    self.vindictive = False
-
-
-                  elif (arguments[0] == 'vindictive!' != -1):
-                    self.nice       = False
-                    self.annoying   = False
-                    self.nasty      = False
-                    self.vindictive = True
-
-                  elif (arguments[0] == 'commands' != -1):
-                      self.irc_notice(user + ' Commands: list {masters|insults|ignore}')
-                      self.irc_notice(user + '           add {master|insult|ignore} <username or insult>')
-                      self.irc_notice(user + '           forget {master|insult|ignore} <username or insult>')
-                      self.irc_notice(user + '           insult <username>')
-                      self.irc_notice(user + '           attack <username>')
-                      self.irc_notice(user + '           tldr{set} {site|status|eta} <info>')
-                      self.irc_notice(user + '           goto <channel>')
-                      self.irc_notice(user + '           shutup!')
-                      self.irc_notice(user + '           sing!')
-                      self.irc_notice(user + '           dance!')
-                      self.irc_notice(user + '           nice!')
-                      self.irc_notice(user + '           annoying!')
-                      self.irc_notice(user + '           nasty!')
-                      self.irc_notice(user + '           vindictive!')
-                      self.irc_notice(user + '           mood?')
-                      self.irc_notice(user + '           commands')
-
-                  else:
-                    self.irc_print('Huh?')
-
-                else:
-                  self.irc_print("You're not the Master!")
-
-              elif user.find("Digital")!= -1:
-
-                if user in self.cautioned_users and not self.nice:
-                  self.ui_console_queue.put('Kicked ' + user)
-                  self.irc_raw_queue.put('KICK %s %s dances on your grave\n' % (CONN['channel'],user))
-                if not self.vindictive:
-                  self.cautioned_users.remove(user);
-                elif user in self.warned_users and self.nasty:
-                  self.irc_notice(user + ' Hey, ' + user + ' last warning, change your nick! type \"/nick your name\" ')
-                  self.cautioned_users.append(user);
-                  self.warned_users.remove(user);
-                elif self.annoying:
-                  self.irc_notice(user + ' Hey, ' + user + ' could you use your empornium username please, just type \"/nick your name\" ')
-                  self.warned_users.append(user);
-
-                elif rline.find("prettiest mod")!= -1:
-                  self.irc_print('That would be kchase')
-                elif rline.find("sexiest mod")!= -1:
-                  self.irc_print('NellyFrozen... Hands down!')
-                # elif pline.lower() == 'hi'!= -1:
-                    # self.irc_print("Well hello there " + user)
-                # elif pline.lower() == 'hello'!= -1:
-                    # self.irc_print("Well hello there " + user)
-                # elif pline.lower() == 'bye'!= -1:
-                    # self.irc_print("Come back soon " + user + "!")
-                # elif pline.lower() == 'good night'!= -1:
-                    # self.irc_print("Sweat dreams " + user + "!")
-                # elif pline.lower() == 'night'!= -1:
-                    # self.irc_print("Sweat dreams " + user + "!")
-
-                elif pline == '!users'!= -1:
-                  if not self.waiting_for_response:
-                    self.display_result = True
-                    self.waiting_for_response = True
-                    self.sock.send('NAMES ' + CONN['channel'] + '\n') #Joins default channel
-
-                elif pline == '!peak'!= -1:
-                  if not self.waiting_for_response:
-                    self.display_result = True
-                    self.waiting_for_response = True
-                    self.sock.send('NAMES ' + CONN['channel'] + '\n') #Joins default channel
-
-                elif ((((dline.lower().find('site')    != -1) or \
-                        (dline.lower().find('emp')     != -1) or \
-                        (dline.lower().find('tracker') != -1))and \
-                        (dline.lower().find('?')       != -1))and \
-                        (dline.lower().find('child')       == -1)):
-                        if (dline.lower().find('what') != -1) or \
-                           (dline.lower().find('why')  != -1):
-#                                      self.irc_print(self.site['reason'])
-                                  self.irc_notice(user + ' ' + self.site['reason'])
-
-                        elif (dline.lower().find('when') != -1) or \
-                             (dline.lower().find('long') != -1) or \
-                             (dline.lower().find('time') != -1) or \
-                             (dline.lower().find('estimate') != -1) or \
-                             (dline.lower().find('back') != -1):
-#                                      self.irc_print(self.site['eta'])
-                                  self.irc_notice(user + ' ' + self.site['eta'])
-
-                        elif (dline.lower().find('up')       != -1) or \
-                             (dline.lower().find('down')     != -1) or \
-                             (dline.lower().find('broke')    != -1) or \
-                             (dline.lower().find('working')  != -1) or \
-                             (dline.lower().find('online')   != -1) or \
-                             (dline.lower().find('offline')  != -1):
-#                                      self.irc_print(self.site['status'])
-                                  self.irc_notice(user + ' ' + self.site['status'])
-
-                # else:
-                    # self.ui_console_queue.put(pline)
-
+              self.irc_raw_received_queue.put(line)
 
 class NicknameInUseError(Exception):
     def __init__(self, value):

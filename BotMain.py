@@ -5,6 +5,7 @@ import getopt
 import sys
 from BotClass import *
 from BotUI import *
+from BotCommandParser import *
 
 UI=True
 
@@ -38,9 +39,13 @@ def command_line(ui_print_queue, ui_status_queue):
 
         if ui_status_queue.empty() == False:
             dummy=ui_status_queue.get()
+        
+        if (ui_status_queue.empty() == True) and (ui_print_queue.empty() == True):
+            time.sleep(0.1)
 
 if __name__ == "__main__":
     irc = Bot()
+    parser = BotCommandParser(irc)
 
     try:
         opts, args = getopt.getopt(sys.argv[1:], "h", ["no_ui",])
