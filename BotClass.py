@@ -243,42 +243,42 @@ class BotClass(object):
 #                    JoinThread.daemon = True
 #                    JoinThread.start()
 
-                elif line.find("%s = %s" % (USER['nick'], CONN['channel'])) != -1: #channel names
-                  if self.waiting_for_response:
-                    rline=line.rstrip('\n') #removes trailing 'rn'
-                    self.names_list=self.names_list+rline
+              elif line.find("%s = %s" % (USER['nick'], CONN['channel'])) != -1: #channel names
+                if self.waiting_for_response:
+                  rline=line.rstrip('\n') #removes trailing 'rn'
+                  self.names_list=self.names_list+rline
 
-                    if line.find(':End of /NAMES list.')!= -1:
-                      sline=self.names_list.split()
-                      kline=self.names_list.split(':')
-                      kline=kline[2].split()
-                      self.names_list=""
-                      self.waiting_for_response = False
+                  if line.find(':End of /NAMES list.')!= -1:
+                    sline=self.names_list.split()
+                    kline=self.names_list.split(':')
+                    kline=kline[2].split()
+                    self.names_list=""
+                    self.waiting_for_response = False
 
-                      if self.random_kick:
-                        while True:
-                          victim = choice(kline[1:])
-                          if victim == USER['owner']:
-                            continue
-                          elif victim == USER['nick']:
-                            continue
-                          else:
-                            break
-
-                        if any(victim[0] == s for s in ['~', '@', '&', '%', '+']):
-                          victim = victim[1:]
-                          self.irc_raw_queue.put('KICK %s %s dances on your grave\n' % (CONN['channel'],victim))
-                          self.random_kick = False
+                    if self.random_kick:
+                      while True:
+                        victim = choice(kline[1:])
+                        if victim == USER['owner']:
+                          continue
+                        elif victim == USER['nick']:
+                          continue
                         else:
-                          self.irc_print('No kicking!')
+                          break
+
+                      if any(victim[0] == s for s in ['~', '@', '&', '%', '+']):
+                        victim = victim[1:]
+                        self.irc_raw_queue.put('KICK %s %s dances on your grave\n' % (CONN['channel'],victim))
+                        self.random_kick = False
+                      else:
+                        self.irc_print('No kicking!')
 
 
-                      if self.display_result:
-                        self.channel_count = self.channel_count + len(sline)
-                        self.channel_count = self.channel_count + sum(-5 for i in sline if i == '=')
+                    if self.display_result:
+                      self.channel_count = self.channel_count + len(sline)
+                      self.channel_count = self.channel_count + sum(-5 for i in sline if i == '=')
 
-                        self.irc_print("Current users in channel: " + str(self.channel_count-8))
-                        self.channel_count = 0
+                      self.irc_print("Current users in channel: " + str(self.channel_count-8))
+                      self.channel_count = 0
 
 
             elif line.find('PRIVMSG') != -1: #channel joined now parse messages
