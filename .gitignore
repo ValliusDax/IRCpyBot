@@ -8,6 +8,12 @@
 bin/
 tmp/
 *.tmp
+*.pyc
+ignore
+insults
+maters
+raw_users
+users
 *.bak
 *.swp
 *~.nib
