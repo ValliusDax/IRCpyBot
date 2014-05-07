@@ -33,7 +33,7 @@ CONN = {'host': config.getdef("irc", "host", "irc.empornium.me"),
         }
 
 
-USER = {'nick': config.getdef("irc", "nick", "Deedee_testing"),
+USER = {'nick': config.getdef("irc", "nick", "Deedee"),
         'ident': config.getdef("irc", "ident", "Deedee"),
         'realname': config.getdef("irc", "", "Deedee"),
         'password': config.getdef("irc", "", "dancingdeedee"),
@@ -42,7 +42,7 @@ USER = {'nick': config.getdef("irc", "nick", "Deedee_testing"),
 
 FLOOD = {'flood_time': config.getdef("irc", "", 15000),
          'flood_messages': config.getdef("irc", "", 9)
-	    }
+	       }
 
 STAT = {'ping': int(0),
         'ping_time': int(1),

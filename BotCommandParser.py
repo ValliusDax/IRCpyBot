@@ -2,7 +2,9 @@ import Queue
 import threading
 import time
 import threading
+import pickle
 
+from random import choice
 from configs.config import USER
 
 class BotCommandParser(object):
@@ -155,35 +157,49 @@ class BotCommandParser(object):
           elif (arguments[0] == 'sing!' != -1):
             Bot.silent = False
 
+
           elif (arguments[0] == 'nice!' != -1):
-            Bot.nice       = True
-            Bot.annoying   = False
-            Bot.nasty      = False
-            Bot.vindictive = False
+            if user == USER['owner'] != -1:
+              Bot.nice       = True
+              Bot.annoying   = False
+              Bot.nasty      = False
+              Bot.vindictive = False
+            else:            
+              Bot.irc_print('Nuh uh ' + user +'!')
 
 
           elif (arguments[0] == 'annoying!' != -1):
-            Bot.nice       = False
-            Bot.annoying   = True
-            Bot.nasty      = False
-            Bot.vindictive = False
+            if user == USER['owner'] != -1:
+              Bot.nice       = False
+              Bot.annoying   = True
+              Bot.nasty      = False
+              Bot.vindictive = False
+            else:            
+              Bot.irc_print('Nuh uh ' + user +'!')
 
 
           elif (arguments[0] == 'nasty!' != -1):
-            Bot.nice       = False
-            Bot.annoying   = False
-            Bot.nasty      = True
-            Bot.vindictive = False
+            if user == USER['owner'] != -1:
+              Bot.nice       = False
+              Bot.annoying   = False
+              Bot.nasty      = True
+              Bot.vindictive = False
+            else:            
+              Bot.irc_print('Nuh uh ' + user +'!')
 
 
           elif (arguments[0] == 'vindictive!' != -1):
-            Bot.nice       = False
-            Bot.annoying   = False
-            Bot.nasty      = False
-            Bot.vindictive = True
+            if user == USER['owner'] != -1:
+              Bot.nice       = False
+              Bot.annoying   = False
+              Bot.nasty      = False
+              Bot.vindictive = True
+            else:            
+              Bot.irc_print('Nuh uh ' + user +'!')
 
           elif (arguments[0] == 'commands' != -1):
-              Bot.irc_notice(user + ' Commands: list {masters|insults|ignore}')
+              Bot.irc_notice(user + ' Commands:')
+              Bot.irc_notice(user + '           list {masters|insults|ignore}')
               Bot.irc_notice(user + '           add {master|insult|ignore} <username or insult>')
               Bot.irc_notice(user + '           forget {master|insult|ignore} <username or insult>')
               Bot.irc_notice(user + '           insult <username>')
@@ -236,44 +252,44 @@ class BotCommandParser(object):
         # elif pline.lower() == 'night'!= -1:
             # Bot.irc_print("Sweat dreams " + user + "!")
 
-        elif pline == '!users'!= -1:
-          if not Bot.waiting_for_response:
-            Bot.display_result = True
-            Bot.waiting_for_response = True
-            Bot.sock.send('NAMES ' + CONN['channel'] + '\n') #Joins default channel
+      elif pline == '!users'!= -1:
+        if not Bot.waiting_for_response:
+          Bot.display_result = True
+          Bot.waiting_for_response = True
+          Bot.sock.send('NAMES ' + CONN['channel'] + '\n') #Joins default channel
 
-        elif pline == '!peak'!= -1:
-          if not Bot.waiting_for_response:
-            Bot.display_result = True
-            Bot.waiting_for_response = True
-            Bot.sock.send('NAMES ' + CONN['channel'] + '\n') #Joins default channel
+      elif pline == '!peak'!= -1:
+        if not Bot.waiting_for_response:
+          Bot.display_result = True
+          Bot.waiting_for_response = True
+          Bot.sock.send('NAMES ' + CONN['channel'] + '\n') #Joins default channel
 
-        elif ((((dline.lower().find('site')    != -1) or \
-                (dline.lower().find('emp')     != -1) or \
-                (dline.lower().find('tracker') != -1))and \
-                (dline.lower().find('?')       != -1))and \
-                (dline.lower().find('child')       == -1)):
-                if (dline.lower().find('what') != -1) or \
-                   (dline.lower().find('why')  != -1):
-    #                                      Bot.irc_print(Bot.site['reason'])
-                          Bot.irc_notice(user + ' ' + Bot.site['reason'])
+      elif ((((dline.lower().find('site')    != -1) or \
+              (dline.lower().find('emp')     != -1) or \
+              (dline.lower().find('tracker') != -1))and \
+              (dline.lower().find('?')       != -1))and \
+              (dline.lower().find('child')       == -1)):
+              if (dline.lower().find('what') != -1) or \
+                 (dline.lower().find('why')  != -1):
+  #                                      Bot.irc_print(Bot.site['reason'])
+                        Bot.irc_notice(user + ' ' + Bot.site['reason'])
 
-                elif (dline.lower().find('when') != -1) or \
-                     (dline.lower().find('long') != -1) or \
-                     (dline.lower().find('time') != -1) or \
-                     (dline.lower().find('estimate') != -1) or \
-                     (dline.lower().find('back') != -1):
-    #                                      Bot.irc_print(Bot.site['eta'])
-                          Bot.irc_notice(user + ' ' + Bot.site['eta'])
+              elif (dline.lower().find('when') != -1) or \
+                   (dline.lower().find('long') != -1) or \
+                   (dline.lower().find('time') != -1) or \
+                   (dline.lower().find('estimate') != -1) or \
+                   (dline.lower().find('back') != -1):
+  #                                      Bot.irc_print(Bot.site['eta'])
+                        Bot.irc_notice(user + ' ' + Bot.site['eta'])
 
-                elif (dline.lower().find('up')       != -1) or \
-                     (dline.lower().find('down')     != -1) or \
-                     (dline.lower().find('broke')    != -1) or \
-                     (dline.lower().find('working')  != -1) or \
-                     (dline.lower().find('online')   != -1) or \
-                     (dline.lower().find('offline')  != -1):
-    #                                      Bot.irc_print(Bot.site['status'])
-                          Bot.irc_notice(user + ' ' + Bot.site['status'])
+              elif (dline.lower().find('up')       != -1) or \
+                   (dline.lower().find('down')     != -1) or \
+                   (dline.lower().find('broke')    != -1) or \
+                   (dline.lower().find('working')  != -1) or \
+                   (dline.lower().find('online')   != -1) or \
+                   (dline.lower().find('offline')  != -1):
+  #                                      Bot.irc_print(Bot.site['status'])
+                        Bot.irc_notice(user + ' ' + Bot.site['status'])
 
         # else:
             # Bot.ui_console_queue.put(pline)

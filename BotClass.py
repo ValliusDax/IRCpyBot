@@ -9,7 +9,6 @@ import datetime
 import Queue
 import pickle
 
-from random import choice
 from configs.config import CONN, USER, FLOOD, STAT
 
 class BotClass(object):
@@ -30,9 +29,11 @@ class BotClass(object):
     ui_status_queue = Queue.Queue(0)
     warned_users = []
     cautioned_users = []
+    irc_chan_list = ""
     waiting_for_response = False;
     channel_count=0
     names_list = ""
+    expect_chan_list = False
     silent     = False
     nice       = True
     annoying   = False
@@ -101,17 +102,14 @@ class BotClass(object):
 
     def join(self):
         time.sleep(10)
-        self.ui_console_queue.put("Joining " + CONN['channel'])
-        self.sock.send('JOIN ' + CONN['channel'] + '\n') #Joins default channel
-#        while True:
-            # try:
-#                time.sleep(10) #wait for 10secs
-#                self.ui_console_queue.put("Checking I'm in the channel")
-#                self.sock.send('JOIN ' + CONN['channel'] + '\n') #Joins default channel
-#                time.sleep(10) #wait for another 10secs
-            # finally:
-                # self.sock.send('QUIT I got killed\n') #Joins default channel
-                # exit()
+        while True:
+          self.ui_console_queue.put("Joining " + CONN['channel'])
+          self.sock.send('JOIN ' + CONN['channel'] + '\n') #Joins default channel
+          while True:
+            self.sock.send('WHOIS '+USER['nick']+'\n')
+            time.sleep(3)
+            if not CONN['channel'] in self.irc_chan_list:
+              break
 
     def irc_print(self,line):
       if not self.silent:
@@ -138,20 +136,21 @@ class BotClass(object):
               continue
 
           if self.irc_notice_queue.empty() == False:
-            line = self.irc_notice_queue.get()
-#            if self.irc_flood_timeout_queue.qsize() >= FLOOD['flood_messages']:
-#              timeout=((self.get_flood_timeout()-self.now_ms())/1000)
-#              if timeout < 0:
-#                self.ui_console_queue.put('Invalid timeout: ' + str(int(timeout)))
-#                break
-#              self.ui_console_queue.put("anti flood triggered")
-#              self.ui_console_queue.put("message queue size: " + str(self.irc_print_queue.qsize() + self.irc_notice_queue.qsize()))
-#              self.ui_console_queue.put("waiting for " + str(timeout) +"s")
-#              time.sleep(timeout)
-#             else:
-            IRC_MESSAGES+=1
-            self.ui_status_queue.put((STAT['irc_messages'],IRC_MESSAGES))
-            self.sock.send("NOTICE " + line + "\n")
+            while self.irc_notice_queue.empty() == False:
+              line = self.irc_notice_queue.get()
+              # if self.irc_flood_timeout_queue.qsize() >= FLOOD['flood_messages']:
+                # timeout=((self.get_flood_timeout()-self.now_ms())/1000)
+                # if timeout < 0:
+                  # self.ui_console_queue.put('Invalid timeout: ' + str(int(timeout)))
+                  # break
+                # self.ui_console_queue.put("anti flood triggered")
+                # self.ui_console_queue.put("message queue size: " + str(self.irc_print_queue.qsize() + self.irc_notice_queue.qsize()))
+                # self.ui_console_queue.put("waiting for " + str(timeout) +"s")
+                # time.sleep(timeout)
+              # else:
+              IRC_MESSAGES+=1
+              self.ui_status_queue.put((STAT['irc_messages'],IRC_MESSAGES))
+              self.sock.send("NOTICE " + line + "\n")
 #                self.irc_flood_timeout_queue.put(self.get_flood_timeout())
 
           if self.irc_print_queue.empty() == False:
@@ -211,7 +210,10 @@ class BotClass(object):
           line=line.rstrip() # removes trailing 'rn'
           if line: # only print meaningful stuff
             if self.verbose_console:
-              self.ui_console_queue.put(line) #server message output
+              if (line.find('PRIVMSG') != -1) or \
+                 (line.find('NOTICE') != -1):
+                message = line.split(':')
+                self.ui_console_queue.put(''.join(message[2:])) #server message output
             if line.find('PRIVMSG') == -1:
               if line.find('Found your hostname')!= -1:
                 self.ui_console_queue.put('Sending IDENT')
@@ -230,7 +232,7 @@ class BotClass(object):
                 self.ui_status_queue.put((STAT['ping_time'],datetime.datetime.now()))
 #                if self.verbose_console:
                 self.ui_console_queue.put('Sending PONG')
-                self.sock.send('PONG '+line[1]+'\r\n')
+                self.sock.send('PONG '+line[1]+'\n')
               elif line.find('Nickname is already in use') != -1:
                 self.irc_raw_queue.put('GHOST %s %s\n' % (USER['nick'],USER['password']))#doesn't work :(
                 self.irc_raw_queue.put('NICK ' + USER['nick'] + '\n')
@@ -289,7 +291,20 @@ class BotClass(object):
                       self.irc_print("Current users in channel: " + str(self.channel_count-8))
                       self.channel_count = 0
 
+              elif line.find("378 %s %s" % (USER['nick'], USER['nick'])) != -1:
+                if not self.expect_chan_list:
+                  self.expect_chan_list=True
 
+              elif line.find("319 %s %s" % (USER['nick'], USER['nick'])) != -1:
+                rline=line.rstrip('\n') #removes trailing 'rn'
+                rline=line.split(':')
+                self.irc_chan_list=rline[2]
+                self.expect_chan_list=False
+                
+              elif line.find("312 %s %s" % (USER['nick'], USER['nick'])) != -1:
+                if self.expect_chan_list:
+                  self.irc_chan_list=""
+              
             elif line.find('PRIVMSG') != -1: #channel joined now parse messages
               self.irc_raw_received_queue.put(line)
 
