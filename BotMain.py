@@ -15,7 +15,7 @@ class Bot(BotClass):
         BotClass.__init__(self)
 
         try:
-           IRC_THREAD = threading.Thread(target=self.connect)
+           IRC_THREAD = threading.Thread(target=self.parse_message)
            IRC_THREAD.daemon = True
            IRC_THREAD.start()
         except NicknameInUseError as e:
@@ -28,8 +28,8 @@ class Bot(BotClass):
             print "Closing"
 
 
-    def connect(self):
-        super(Bot,self).connect()
+    def parse_message(self):
+        super(Bot,self).parse_message()
 
 def command_line(ui_print_queue, ui_status_queue):
     while True:

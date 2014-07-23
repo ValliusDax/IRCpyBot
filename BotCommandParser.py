@@ -5,7 +5,7 @@ import threading
 import pickle
 
 from random import choice
-from configs.config import USER
+from configs.config import USER, CONN
 
 class BotCommandParser(object):
 
@@ -13,7 +13,7 @@ class BotCommandParser(object):
     ParseThread = threading.Thread(target=self.parse_commands, args=(Bot,))
     ParseThread.daemon = True
     ParseThread.start()
-  
+
   def parse_commands(self, Bot):
     ME=USER['nick']+'!'
     while 1:
@@ -22,7 +22,7 @@ class BotCommandParser(object):
       else:
         time.sleep(0.1)
         continue
-        
+
       rline=line.rstrip() #removes trailing 'rn'
       dline=rline.split(':')
       dline=''.join(dline[2:])
@@ -164,7 +164,7 @@ class BotCommandParser(object):
               Bot.annoying   = False
               Bot.nasty      = False
               Bot.vindictive = False
-            else:            
+            else:
               Bot.irc_print('Nuh uh ' + user +'!')
 
 
@@ -174,7 +174,7 @@ class BotCommandParser(object):
               Bot.annoying   = True
               Bot.nasty      = False
               Bot.vindictive = False
-            else:            
+            else:
               Bot.irc_print('Nuh uh ' + user +'!')
 
 
@@ -184,7 +184,7 @@ class BotCommandParser(object):
               Bot.annoying   = False
               Bot.nasty      = True
               Bot.vindictive = False
-            else:            
+            else:
               Bot.irc_print('Nuh uh ' + user +'!')
 
 
@@ -194,7 +194,42 @@ class BotCommandParser(object):
               Bot.annoying   = False
               Bot.nasty      = False
               Bot.vindictive = True
-            else:            
+            else:
+              Bot.irc_print('Nuh uh ' + user +'!')
+
+
+          elif (arguments[0] == 'hug' != -1) and (numargs > 1):
+            if user == USER['owner'] != -1:
+              Bot.irc_action('hugs ' + arguments[1])
+            else:
+              Bot.irc_print('Nuh uh ' + user +'!')
+
+
+          elif (arguments[0] == 'kiss' != -1) and (numargs > 1):
+            if user == USER['owner'] != -1:
+              Bot.irc_action('kisses ' + arguments[1])
+            else:
+              Bot.irc_print('Nuh uh ' + user +'!')
+
+
+          elif (arguments[0] == 'slap' != -1) and (numargs > 1):
+            if user == USER['owner'] != -1:
+              Bot.irc_action('slaps ' + arguments[1])
+            else:
+              Bot.irc_print('Nuh uh ' + user +'!')
+
+
+          elif (arguments[0] == 'spank' != -1) and (numargs > 1):
+            if user == USER['owner'] != -1:
+              Bot.irc_action('spanks ' + arguments[1])
+            else:
+              Bot.irc_print('Nuh uh ' + user +'!')
+
+
+          elif (arguments[0] == 'say' != -1) and (numargs > 1):
+            if user == USER['owner'] != -1:
+              Bot.irc_print(' '.join(arguments[1:]))
+            else:
               Bot.irc_print('Nuh uh ' + user +'!')
 
           elif (arguments[0] == 'commands' != -1):
@@ -204,7 +239,7 @@ class BotCommandParser(object):
               Bot.irc_notice(user + '           forget {master|insult|ignore} <username or insult>')
               Bot.irc_notice(user + '           insult <username>')
               Bot.irc_notice(user + '           attack <username>')
-              Bot.irc_notice(user + '           tldr{set} {site|status|eta} <info>')
+              Bot.irc_notice(user + '           tldr {set} {status|reason|eta} <info>')
               Bot.irc_notice(user + '           goto <channel>')
               Bot.irc_notice(user + '           shutup!')
               Bot.irc_notice(user + '           sing!')
@@ -227,7 +262,7 @@ class BotCommandParser(object):
         if user in Bot.cautioned_users and not Bot.nice:
           Bot.ui_console_queue.put('Kicked ' + user)
           Bot.irc_raw_queue.put('KICK %s %s dances on your grave\n' % (CONN['channel'],user))
-        if not Bot.vindictive:
+        elif user in Bot.cautioned_users and not Bot.vindictive:
           Bot.cautioned_users.remove(user);
         elif user in Bot.warned_users and Bot.nasty:
           Bot.irc_notice(user + ' Hey, ' + user + ' last warning, change your nick! type \"/nick your name\" ')
@@ -237,20 +272,20 @@ class BotCommandParser(object):
           Bot.irc_notice(user + ' Hey, ' + user + ' could you use your empornium username please, just type \"/nick your name\" ')
           Bot.warned_users.append(user);
 
-        elif rline.find("prettiest mod")!= -1:
-          Bot.irc_print('That would be kchase')
-        elif rline.find("sexiest mod")!= -1:
-          Bot.irc_print('NellyFrozen... Hands down!')
-        # elif pline.lower() == 'hi'!= -1:
-            # Bot.irc_print("Well hello there " + user)
-        # elif pline.lower() == 'hello'!= -1:
-            # Bot.irc_print("Well hello there " + user)
-        # elif pline.lower() == 'bye'!= -1:
-            # Bot.irc_print("Come back soon " + user + "!")
-        # elif pline.lower() == 'good night'!= -1:
-            # Bot.irc_print("Sweat dreams " + user + "!")
-        # elif pline.lower() == 'night'!= -1:
-            # Bot.irc_print("Sweat dreams " + user + "!")
+      elif rline.find("prettiest mod")!= -1:
+        Bot.irc_print('That would be kchase')
+      elif rline.find("sexiest mod")!= -1:
+        Bot.irc_print('NellyFrozen... Hands down!')
+      # elif pline.lower() == 'hi'!= -1:
+          # Bot.irc_print("Well hello there " + user)
+      # elif pline.lower() == 'hello'!= -1:
+          # Bot.irc_print("Well hello there " + user)
+      # elif pline.lower() == 'bye'!= -1:
+          # Bot.irc_print("Come back soon " + user + "!")
+      # elif pline.lower() == 'good night'!= -1:
+          # Bot.irc_print("Sweat dreams " + user + "!")
+      # elif pline.lower() == 'night'!= -1:
+          # Bot.irc_print("Sweat dreams " + user + "!")
 
       elif pline == '!users'!= -1:
         if not Bot.waiting_for_response:
@@ -287,13 +322,15 @@ class BotCommandParser(object):
                    (dline.lower().find('broke')    != -1) or \
                    (dline.lower().find('working')  != -1) or \
                    (dline.lower().find('online')   != -1) or \
-                   (dline.lower().find('offline')  != -1):
+                   (dline.lower().find('offline')  != -1) or \
+                   (dline.lower().find('problems') != -1) or \
+                   (dline.lower().find('issues')   != -1):
   #                                      Bot.irc_print(Bot.site['status'])
                         Bot.irc_notice(user + ' ' + Bot.site['status'])
 
         # else:
             # Bot.ui_console_queue.put(pline)
-            
+
   def __init__(self, Bot):
     try:
         self.main(Bot)
