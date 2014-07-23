@@ -1,4 +1,15 @@
 #################
+## Pickes
+#################
+ignore
+users
+masters
+raw_users
+insults
+status
+configs/config.py
+
+#################
 ## Eclipse
 #################
 
